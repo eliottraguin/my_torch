@@ -1,0 +1,8 @@
+my_torch_analyzer
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.nn
+dataset/
+dataset.zip
