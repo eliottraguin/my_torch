@@ -1,0 +1,10 @@
+[run]
+branch = True
+source = src
+relative_files = True
+
+[report]
+show_missing = True
+
+[html]
+directory = htmlcov

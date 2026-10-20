@@ -5,6 +5,9 @@
 ## Makefile
 ##
 
+TEST_ENV	=	.venv-tests
+TEST_PYTHON	=	$(TEST_ENV)/bin/python
+
 NAME1	=	my_torch_analyzer
 NAME2	=	my_torch_generator
 
@@ -19,6 +22,17 @@ clean:
 	find . -name "*.pyc" -delete 2>/dev/null || true
 
 fclean:	clean
-	$(RM) $(NAME1) $(NAME2)
+	$(RM) $(NAME1) $(NAME2) .coverage .coverage.*
+	$(RM) -r htmlcov
 
-.PHONY:	all re clean fclean
+$(TEST_ENV)/.dependencies-installed: tests/requirements-dev.txt
+	python3 -m venv $(TEST_ENV)
+	$(TEST_PYTHON) -m pip install -r tests/requirements-dev.txt
+	touch $@
+
+tests_run: $(TEST_ENV)/.dependencies-installed
+	PYTHONPATH="$(CURDIR)/src$${PYTHONPATH:+:$$PYTHONPATH}" $(TEST_PYTHON) -m coverage run -m unittest discover -s tests -t . -v
+	$(TEST_PYTHON) -m coverage report
+	$(TEST_PYTHON) -m coverage html
+
+.PHONY:	all re clean fclean tests_run
