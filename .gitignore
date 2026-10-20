@@ -7,3 +7,10 @@ __pycache__/
 *.nn
 dataset/
 dataset.zip
+
+# Test coverage and local development environment
+.coverage
+.coverage.*
+htmlcov/
+.venv/
+.venv-tests/
