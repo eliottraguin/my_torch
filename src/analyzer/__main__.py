@@ -1,5 +1,5 @@
 import sys
-from args import parse_args, validate_args, USAGE
+from analyzer.args import parse_args, validate_args, USAGE
 
 
 def main():

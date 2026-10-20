@@ -5,10 +5,12 @@
 ## Makefile
 ##
 
-NAME	=	my_torch_analyzer
+NAME1	=	my_torch_analyzer
+NAME2	=	my_torch_generator
 
 all:
-	python3 -m zipapp src/ -o $(NAME) -p "/usr/bin/env python3"
+	python3 -m zipapp src/analyzer -o $(NAME1) -p "/usr/bin/env python3"
+	python3 -m zipapp src/generator -o $(NAME2) -p "/usr/bin/env python3"
 
 re:	fclean all
 
