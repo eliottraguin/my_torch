@@ -1,4 +1,5 @@
 my_torch_analyzer
+my_torch_generator
 __pycache__/
 *.pyc
 *.pyo
