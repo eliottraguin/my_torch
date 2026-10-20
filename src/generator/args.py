@@ -1,6 +1,7 @@
 """Parse and validate the neural network generator command line."""
 
 import argparse
+from genericpath import isfile
 import sys
 
 
@@ -47,6 +48,8 @@ def validate_args(args):
             _create_parser().error(f"network count for '{config_file}' must be an integer")
         if number <= 0:
             _create_parser().error(f"network count for '{config_file}' must be greater than zero")
+        if not isfile(config_file):
+            _create_parser().error(f"configuration file '{config_file}' does not exist")
         configurations.append((config_file, number))
     args["configurations"] = configurations
 

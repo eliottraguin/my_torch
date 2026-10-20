@@ -1,5 +1,5 @@
 import sys
-from generator.args import parse_args
+from generator.args import parse_args, validate_args
 
 
 def main():

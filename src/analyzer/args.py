@@ -2,6 +2,7 @@
 
 import argparse
 import sys
+from os.path import isfile
 
 
 class _ArgumentParser(argparse.ArgumentParser):
@@ -52,13 +53,20 @@ def _create_parser():
 
 def parse_args(argv):
     """Accept a complete argv, including the program name, and return a dict."""
-    return vars(_create_parser().parse_args(argv[1:]))
+    parser = _create_parser()
+    values = vars(parser.parse_args(argv[1:]))
+    validate_args(values)
+    return values
 
 
 def validate_args(args):
     """Validate the dependency between training mode and the save option."""
     if args["save"] is not None and args["mode"] != "train":
         _create_parser().error("--save only works in train mode")
+    if not isfile(args["loadfile"]):
+        _create_parser().error("LOADFILE does not exist")
+    if not isfile(args["chessfile"]):
+        _create_parser().error("CHESSFILE does not exist")
 
 
 USAGE = _create_parser().format_help().rstrip()
