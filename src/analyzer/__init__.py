@@ -1,15 +1,17 @@
 import sys
-from analyzer.args import parse_args, validate_args, USAGE
-
+from analyzer.args import parse_args
+from analyzer.chess.chessfile import ChessFile
 
 def main():
     args = parse_args(sys.argv)
-
-    print(f"Mode: {args['mode']}")
-    print(f"Network file: {args['loadfile']}")
-    print(f"Chess file: {args['chessfile']}")
-    if args["save"]:
-        print(f"Save to: {args['save']}")
+    try:
+        chessfile = ChessFile(args["chessfile"])
+    except FileNotFoundError:
+        print(f"Error: chess file '{args['chessfile']}' does not exist.", file=sys.stderr)
+        sys.exit(84)
+    except ValueError as e:
+        print(f"{e}", file=sys.stderr)
+        sys.exit(84)
 
 
 if __name__ == "__main__":
