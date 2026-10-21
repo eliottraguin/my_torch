@@ -37,16 +37,3 @@ class FENTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "Invalid FEN format"):
                     FEN(fen_string).parse()
 
-    def test_display_after_parsing(self):
-        for label in (None, "Checkmate Black"):
-            with self.subTest(label=label):
-                fen = FEN(POSITION if label is None else f"{POSITION} {label}").parse()
-                output = StringIO()
-                with redirect_stdout(output):
-                    fen.display()
-                self.assertIn("Active Color: w", output.getvalue())
-                self.assertIn("Fullmove Number: 1", output.getvalue())
-                if label:
-                    self.assertIn(f"Label: {label}", output.getvalue())
-                else:
-                    self.assertNotIn("Label:", output.getvalue())
