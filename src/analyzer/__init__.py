@@ -1,11 +1,16 @@
 import sys
 from analyzer.args import parse_args
 from analyzer.chess.chessfile import ChessFile
+from analyzer.chess.chessencoder import ChessEncoder
 
 def main():
     args = parse_args(sys.argv)
     try:
         chessfile = ChessFile(args["chessfile"])
+        for fen_game in chessfile.fen_games:
+            chessencoder = ChessEncoder(fen_game)
+            encoded = chessencoder.encode()
+            print(encoded)
     except FileNotFoundError:
         print(f"Error: chess file '{args['chessfile']}' does not exist.", file=sys.stderr)
         sys.exit(84)
