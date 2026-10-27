@@ -150,9 +150,22 @@ Syntaxe déclarée de l'analyseur :
 ./my_torch_analyzer [--predict | --train [--save SAVEFILE]] LOADFILE CHESSFILE
 ```
 
-**L'entraînement n'est pas encore disponible.** Le parseur reconnaît `--train`
-et `--save`, mais l'exécution actuelle emprunte le même parcours d'inférence et
-n'entraîne ni ne sauvegarde de modèle. Utilise `--predict` pour les essais actuels.
+**L'entraînement n'est pas encore disponible.** `--train` appelle désormais une
+fonction dédiée, qui signale cette absence sur stderr et termine avec le code 84.
+Aucune prédiction ni sauvegarde n'est effectuée dans ce mode. La destination
+prévue est `SAVEFILE` si `--save` est fourni, sinon `LOADFILE`.
+
+## Organisation de l'analyseur
+
+| Fichier | Responsabilité |
+| --- | --- |
+| `src/analyzer/__init__.py` | Parse les arguments et traduit les erreurs en stderr/code 84. |
+| `src/analyzer/application.py` | Charge le réseau et les positions une seule fois, puis sélectionne le mode. |
+| `src/analyzer/prediction.py` | Encode les positions et affiche les prédictions dans l'ordre. |
+| `src/analyzer/training.py` | Point d'entrée du futur apprentissage : réseau, positions et destination de sauvegarde. |
+
+Le choix du mode est fait avant la boucle de prédiction. L'apprentissage pourra
+ainsi gérer le jeu de données et plusieurs époques dans son propre parcours.
 
 ## Tests et couverture
 
@@ -164,11 +177,6 @@ Cette cible prépare automatiquement `.venv-tests`, installe les dépendances,
 lance la suite `unittest`, affiche la couverture du code de `src/` (branches
 comprises) et produit le rapport HTML `htmlcov/index.html`.
 Une erreur dans la suite fait échouer la cible.
-
-Certains tests historiques restent à adapter aux changements récents de
-chargement et de format des modèles. En particulier, des tests utilisent encore
-des fichiers de modèle vides, désormais refusés par le chargeur JSON. La suite
-complète présente donc actuellement des échecs.
 
 Pour lancer uniquement les tests de l'encodeur après préparation des dépendances :
 
