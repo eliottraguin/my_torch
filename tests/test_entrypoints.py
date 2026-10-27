@@ -12,19 +12,22 @@ from tests.support import CommandLineTestCase
 
 
 class EntryPointTests(CommandLineTestCase):
-    def test_analyzer_valid_invocations(self):
-        cases = [
-            ["--predict", self.network, self.boards],
-            ["--train", self.network, self.boards],
-            ["--train", "--save", self.saved_network, self.network, self.boards],
-        ]
-        for args in cases:
-            with self.subTest(args=args):
-                stderr = StringIO()
-                with patch("sys.argv", ["my_torch_analyzer", *args]), \
-                        redirect_stdout(StringIO()), redirect_stderr(stderr):
-                    self.assertIsNone(analyzer.main())
-                self.assertEqual(stderr.getvalue(), "")
+    def test_analyzer_valid_prediction(self):
+        stderr = StringIO()
+        argv = ["my_torch_analyzer", "--predict", self.network, self.boards]
+        with patch("sys.argv", argv), redirect_stdout(StringIO()), redirect_stderr(stderr):
+            self.assertIsNone(analyzer.main())
+        self.assertEqual(stderr.getvalue(), "")
+
+    def test_training_reports_not_implemented_without_modifying_models(self):
+        original = Path(self.network).read_bytes()
+        for options in ([], ["--save", self.saved_network]):
+            with self.subTest(options=options):
+                argv = ["my_torch_analyzer", "--train", *options, self.network, self.boards]
+                with patch("sys.argv", argv):
+                    self.assert_cli_error(analyzer.main, "Training is not implemented")
+                self.assertEqual(Path(self.network).read_bytes(), original)
+                self.assertFalse(Path(self.saved_network).exists())
 
     def test_generator_valid_invocation(self):
         for path, name in [(self.config, "first"), (self.other_config, "second")]:

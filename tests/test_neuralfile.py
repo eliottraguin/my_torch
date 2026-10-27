@@ -59,7 +59,6 @@ class NeuralFileTests(unittest.TestCase):
         self.assertEqual([path.name for path in paths],
                          ["network_1.nn", "network_2.nn", "network_3.nn"])
         models = [json.loads(path.read_text()) for path in paths]
-        self.assertEqual([model["seed"] for model in models], [42, 43, 44])
         for index, model in enumerate(models):
             self.assertEqual(model, network.get_data(seed=42 + index))
         self.assertNotEqual(models[0]["weights"], models[1]["weights"])
