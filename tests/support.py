@@ -2,9 +2,20 @@
 
 from contextlib import redirect_stderr, redirect_stdout
 from io import StringIO
+import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
+
+
+def write_test_network(path):
+    """Write a deterministic model compatible with the 838-feature encoder."""
+    Path(path).write_text(json.dumps({
+        "layers": [838, 3], "learning_rate": 0.01,
+        "labels": ["Checkmate", "Check", "Nothing"],
+        "weights": [[[0.0] * 838 for _ in range(3)]],
+        "biases": [[0.0, 1.0, -1.0]],
+    }))
 
 
 class CommandLineTestCase(unittest.TestCase):
@@ -12,7 +23,8 @@ class CommandLineTestCase(unittest.TestCase):
         temporary = TemporaryDirectory(prefix="mytorch tests ")
         self.addCleanup(temporary.cleanup)
         self.directory = Path(temporary.name)
-        self.network = str(self.create_file("network.nn"))
+        self.network = str(self.directory / "network.nn")
+        write_test_network(self.network)
         self.boards = str(self.create_file("boards.txt"))
         self.config = str(self.create_file("network.conf"))
         self.other_config = str(self.create_file("other.conf"))
