@@ -1,29 +1,19 @@
+"""Command-line entry point for the chessboard analyzer."""
+
 import sys
-from analyzer.args import parse_args
-from analyzer.chess.chessfile import ChessFile
-from analyzer.chess.chessencoder import ChessEncoder
-from analyzer.neural_network import NeuralNetwork
 
-def core(args):
-    neural_network = NeuralNetwork.load_from_file(args["loadfile"])
-    chessfile = ChessFile(args["chessfile"])
-    for i, fen_game in enumerate(chessfile.fen_games):
-        chessencoder = ChessEncoder(fen_game)
-        encoded = chessencoder.encode()
-        prediction, confidence = neural_network.predict(encoded)
-        print(f"FEN game {i}: Prediction: {prediction}, Confidence: {confidence}")
+from .application import run
+from .args import parse_args
 
 
-def main():
-    args = parse_args(sys.argv)
+def main(argv=None):
+    """Parse a complete argv and translate application errors into exit code 84."""
     try:
-        core(args)
-    except FileNotFoundError:
-        print(f"Error: chess file '{args['chessfile']}' does not exist.", file=sys.stderr)
-        sys.exit(84)
-    except ValueError as e:
-        print(f"{e}", file=sys.stderr)
-        sys.exit(84)
+        args = parse_args(sys.argv if argv is None else argv)
+        run(args)
+    except (OSError, ValueError, NotImplementedError) as error:
+        print(f"Error: {error}", file=sys.stderr)
+        raise SystemExit(84) from error
 
 
 if __name__ == "__main__":
