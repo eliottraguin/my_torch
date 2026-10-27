@@ -2,6 +2,8 @@
 
 from contextlib import redirect_stderr, redirect_stdout
 from io import StringIO
+import json
+from pathlib import Path
 from unittest.mock import patch
 
 import analyzer
@@ -25,11 +27,19 @@ class EntryPointTests(CommandLineTestCase):
                 self.assertEqual(stderr.getvalue(), "")
 
     def test_generator_valid_invocation(self):
+        for path, name in [(self.config, "first"), (self.other_config, "second")]:
+            Path(path).write_text(json.dumps({
+                "name": str(self.directory / name), "layers": [2, 2, 3],
+                "seed": 42, "init": 0.1, "learning_rate": 0.01,
+                "labels": ["Checkmate", "Check", "Nothing"],
+            }))
         args = ["my_torch_generator", self.config, "2", self.other_config, "1"]
         stderr = StringIO()
         with patch("sys.argv", args), redirect_stdout(StringIO()), redirect_stderr(stderr):
             self.assertIsNone(generator.main())
         self.assertEqual(stderr.getvalue(), "")
+        for name in ["first_1.nn", "first_2.nn", "second_1.nn"]:
+            self.assertTrue((self.directory / name).is_file())
 
     def test_entrypoints_help(self):
         for module, program in [(analyzer, "my_torch_analyzer"),
