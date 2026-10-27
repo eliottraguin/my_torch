@@ -29,7 +29,6 @@ class NeuralFile:
             "layers": self.config_data["layers"],
             "learning_rate": self.config_data["learning_rate"],
             "labels": self.config_data["labels"],
-            "seed": seed,
             "weights": [matrix.tolist() for matrix in weights],
             "biases": [vector.tolist() for vector in biases],
         }
