@@ -46,12 +46,32 @@ class NeuralNetwork:
         except (FileNotFoundError, KeyError, ValueError) as e:
             raise ValueError(f"Error loading neural network from {self.filepath}: {e}") from e
 
+    def forward_pass(self, input_data):
+        """Forward pass returning activations at every layer (including input)."""
+        activations = [np.array(input_data, dtype=np.float32)]
+        for weights, biases in zip(self.weights, self.biases):
+            activations.append(sigmoid(np.dot(weights, activations[-1]) + biases))
+        return activations
+
     def predict(self, input_data):
         """Predict the output for the given input data."""
         if len(input_data) != self.input_size:
             raise ValueError(f"Input data must have size {self.input_size}, got {len(input_data)}")
-        layer_input = np.array(input_data, dtype=np.float32)
-        for weights, biases in zip(self.weights, self.biases):
-            layer_input = sigmoid(np.dot(weights, layer_input) + biases)
-        index_label = np.argmax(layer_input)
-        return self.labels[index_label], layer_input[index_label]
+        activations = self.forward_pass(input_data)
+        output = activations[-1]
+        index_label = np.argmax(output)
+        return self.labels[index_label], output[index_label]
+
+    def save(self, filepath):
+        """Save the neural network to a JSON file."""
+        layers = [self.input_size] + list(self.hidden_layers) + [self.output_size]
+        data = {
+            "layers": layers,
+            "learning_rate": self.learning_rate,
+            "labels": self.labels,
+            "weights": [w.tolist() for w in self.weights],
+            "biases": [b.tolist() for b in self.biases],
+        }
+        with open(filepath, 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=2, allow_nan=False)
+            f.write('\n')
