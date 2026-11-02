@@ -29,6 +29,8 @@ class NeuralFile:
             "layers": self.config_data["layers"],
             "learning_rate": self.config_data["learning_rate"],
             "labels": self.config_data["labels"],
+            "hidden_activation": self.config_data.get("hidden_activation", "sigmoid"),
+            "output_activation": self.config_data.get("output_activation", "sigmoid"),
             "weights": [matrix.tolist() for matrix in weights],
             "biases": [vector.tolist() for vector in biases],
         }

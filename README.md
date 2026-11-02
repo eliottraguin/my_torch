@@ -11,7 +11,8 @@ Deux exécutables sont disponibles :
 **État actuel :** la génération et l'inférence sont implémentées. Les réseaux
 générés possèdent des poids aléatoires et ne sont pas entraînés : leurs sorties
 permettent de tester le fonctionnement du programme, sans démontrer une capacité
-à reconnaître correctement les positions. L'apprentissage reste à implémenter.
+à reconnaître correctement les positions. Le mode entraînement ajuste ces poids
+à partir de positions étiquetées.
 
 ## Installation
 
@@ -96,6 +97,8 @@ Les fichiers `.conf` utilisent JSON. Exemple compatible avec l'encodeur actuel :
   "seed": 42,
   "init": 0.1,
   "learning_rate": 0.01,
+  "hidden_activation": "relu",
+  "output_activation": "sigmoid",
   "labels": ["Checkmate", "Check", "Nothing"]
 }
 ```
@@ -106,7 +109,9 @@ Les fichiers `.conf` utilisent JSON. Exemple compatible avec l'encodeur actuel :
 | `layers` | Tailles successives : entrées, couches cachées, sorties. |
 | `seed` | Graine du premier réseau ; elle augmente d'une unité pour chaque réseau suivant. |
 | `init` | Poids tirés uniformément entre `-init` et `init`. Les biais commencent à zéro. |
-| `learning_rate` | Valeur conservée dans le modèle pour le futur entraînement. |
+| `learning_rate` | Taux utilisé pour les mises à jour pendant l'entraînement. |
+| `hidden_activation` | Activation des couches cachées : `sigmoid`, `relu` ou `silu`. Défaut : `sigmoid`. |
+| `output_activation` | Activation de sortie. Conserver `sigmoid` pour comparer les couches cachées. Défaut : `sigmoid`. |
 | `labels` | Correspondance entre les indices de sortie et les labels. |
 
 Pour l'analyse des FEN, conserve actuellement **838 entrées** et **3 sorties**
@@ -150,10 +155,47 @@ Syntaxe déclarée de l'analyseur :
 ./my_torch_analyzer [--predict | --train [--save SAVEFILE]] LOADFILE CHESSFILE
 ```
 
-**L'entraînement n'est pas encore disponible.** `--train` appelle désormais une
-fonction dédiée, qui signale cette absence sur stderr et termine avec le code 84.
-Aucune prédiction ni sauvegarde n'est effectuée dans ce mode. La destination
-prévue est `SAVEFILE` si `--save` est fourni, sinon `LOADFILE`.
+Pour entraîner un réseau depuis des positions étiquetées :
+
+```bash
+./my_torch_analyzer --train --save my_torch_network.nn basic_network_1.nn \
+    tests/dataset_example/checkmate/10_pieces.txt
+```
+
+La destination est `SAVEFILE` si `--save` est fourni, sinon `LOADFILE`. Les messages
+d'apprentissage vont sur stderr. Le modèle sauvegardé conserve ses activations.
+Un checkpoint est écrit avant les mises à jour puis après chaque époque terminée.
+Avec `Ctrl+C`, le programme restaure et sauvegarde la dernière époque terminée,
+puis quitte avec le code 130. Une époque interrompue n'est pas conservée.
+L'écriture utilise un fichier temporaire puis un remplacement atomique pour
+préserver le précédent `.nn` si la sauvegarde échoue. Un arrêt forcé (`kill -9`)
+ou une coupure ne permet pas d'exécuter la sauvegarde finale ; le dernier
+checkpoint déjà écrit reste disponible.
+Les anciens modèles sans champs d'activation utilisent sigmoid sur chaque couche.
+Pour comparer ReLU et SiLU, génère deux modèles à partir de configurations ayant
+respectivement `"hidden_activation": "relu"` et `"hidden_activation": "silu"`.
+La propagation avant et la rétropropagation utilisent les mêmes activations et
+leurs dérivées correspondantes ; la loss reste l'erreur quadratique actuelle.
+
+L'entraînement réserve environ 20 % des groupes de positions à la validation,
+avec une graine fixe de 42 et une répartition par classe quand les effectifs le
+permettent. Deux entrées encodées identiques restent dans le même ensemble ;
+des labels contradictoires pour une même entrée sont refusés. Ce découpage ne
+regroupe pas automatiquement les positions différentes issues d'une même partie.
+Pour une évaluation finale, garde également un fichier de test indépendant.
+
+Après chaque époque, la perte de validation est calculée sans modifier les poids.
+L'entraînement s'arrête après 10 époques sans amélioration supérieure à `1e-6`,
+avec un maximum de 200 époques. Les meilleurs poids et biais sont restaurés avant
+la sauvegarde, même si le meilleur modèle était celui du départ (époque 0).
+Les pertes sont affichées en notation scientifique pour distinguer les petites
+valeurs de zéro. La patience, le seuil, la fraction de validation et la graine
+sont des arguments nommés de `run_training` ; la syntaxe CLI reste inchangée.
+
+Si le dataset est trop petit pour fournir une validation distincte, un avertissement
+annonce que l'arrêt surveille uniquement la perte d'entraînement, sans mesure de
+généralisation. Un dataset contenant une seule classe provoque aussi un avertissement :
+une faible perte sur ce fichier ne prouve pas la reconnaissance des autres classes.
 
 ## Organisation de l'analyseur
 
@@ -162,7 +204,8 @@ prévue est `SAVEFILE` si `--save` est fourni, sinon `LOADFILE`.
 | `src/analyzer/__init__.py` | Parse les arguments et traduit les erreurs en stderr/code 84. |
 | `src/analyzer/application.py` | Charge le réseau et les positions une seule fois, puis sélectionne le mode. |
 | `src/analyzer/prediction.py` | Encode les positions et affiche les prédictions dans l'ordre. |
-| `src/analyzer/training.py` | Point d'entrée du futur apprentissage : réseau, positions et destination de sauvegarde. |
+| `src/analyzer/training.py` | Prépare les données ; `train_network` entraîne une époque, `evaluate_loss` évalue à poids fixes et `_run_epochs` gère les sauvegardes et interruptions. |
+| `src/analyzer/early_stopping.py` | Suit la meilleure perte, compte les époques sans progrès significatif et conserve une copie des meilleurs poids. |
 
 Le choix du mode est fait avant la boucle de prédiction. L'apprentissage pourra
 ainsi gérer le jeu de données et plusieurs époques dans son propre parcours.
