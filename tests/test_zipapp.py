@@ -75,7 +75,7 @@ class AnalyzerZipappTests(unittest.TestCase):
         self.assertIn("Invalid FEN", result.stderr)
         self.assertNotIn("Traceback", result.stderr)
 
-    def test_training_uses_its_own_handler_and_reports_exit_84(self):
+    def test_training_saves_a_model_without_predicting_or_overwriting_source(self):
         network = self.directory / "training-network.nn"
         boards = self.directory / "training-boards.txt"
         output = self.directory / "trained.nn"
@@ -83,9 +83,9 @@ class AnalyzerZipappTests(unittest.TestCase):
         original = network.read_bytes()
         boards.write_text("8/8/8/8/8/8/8/K6k w - - 0 1 Nothing\n")
         result = self.run_analyzer("--train", "--save", str(output), str(network), str(boards))
-        self.assertEqual(result.returncode, 84)
+        self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(result.stdout, "")
-        self.assertIn("Training is not implemented", result.stderr)
+        self.assertIn("Network saved", result.stderr)
         self.assertNotIn("Traceback", result.stderr)
         self.assertEqual(network.read_bytes(), original)
-        self.assertFalse(output.exists())
+        self.assertTrue(output.is_file())

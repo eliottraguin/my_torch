@@ -19,13 +19,13 @@ class EntryPointTests(CommandLineTestCase):
             self.assertIsNone(analyzer.main())
         self.assertEqual(stderr.getvalue(), "")
 
-    def test_training_reports_not_implemented_without_modifying_models(self):
+    def test_training_rejects_empty_data_without_modifying_models(self):
         original = Path(self.network).read_bytes()
         for options in ([], ["--save", self.saved_network]):
             with self.subTest(options=options):
                 argv = ["my_torch_analyzer", "--train", *options, self.network, self.boards]
                 with patch("sys.argv", argv):
-                    self.assert_cli_error(analyzer.main, "Training is not implemented")
+                    self.assert_cli_error(analyzer.main, "No labeled positions")
                 self.assertEqual(Path(self.network).read_bytes(), original)
                 self.assertFalse(Path(self.saved_network).exists())
 

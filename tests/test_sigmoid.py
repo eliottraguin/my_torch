@@ -4,7 +4,8 @@ import unittest
 
 import numpy as np
 
-from analyzer.neural_network import NeuralNetwork, sigmoid
+from analyzer.neural_network import NeuralNetwork
+from analyzer.activation import sigmoid
 
 
 class SigmoidTests(unittest.TestCase):
