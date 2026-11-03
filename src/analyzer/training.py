@@ -92,7 +92,13 @@ def evaluate_loss(network, examples):
 
 
 def _prepare_examples(network, positions):
-    labeled = [(p, p.label[0]) for p in positions if p.label]
+    labeled = []
+    for p in positions:
+        if p.label:
+            labels = p.label[0]
+            if len(p.label) != 1:
+                labels = " ".join(p.label)
+            labeled.append((p, labels))
     if not labeled:
         raise ValueError("No labeled positions found in training file.")
     examples = []
