@@ -80,7 +80,7 @@ class ChessEncoder:
 
     def encode_halfmove_clock(self):
         """ Encode the halfmove clock into a single value. """
-        if not self.fen_game.halfmove_clock.isdigit() or int(self.fen_game.halfmove_clock) < 0 or int(self.fen_game.halfmove_clock) > 250:
+        if not self.fen_game.halfmove_clock.isdigit() or int(self.fen_game.halfmove_clock) < 0:
             raise ValueError(f"Invalid halfmove clock in FEN: {self.fen_game.halfmove_clock}")
         return np.array([float(self.fen_game.halfmove_clock)], dtype=np.float32)
 
