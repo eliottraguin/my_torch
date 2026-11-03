@@ -1,6 +1,6 @@
 """Check mode routing, prediction ordering and CLI error handling."""
 
-from contextlib import redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout
 from io import StringIO
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
@@ -84,13 +84,15 @@ class PredictionTests(unittest.TestCase):
         network = Mock()
         network.predict.side_effect = [("Nothing", 0.75), ("Check", 0.9)]
         stdout = StringIO()
-        with redirect_stdout(stdout):
+        stderr = StringIO()
+        with redirect_stdout(stdout), redirect_stderr(stderr):
             run_prediction(network, positions)
         self.assertEqual(stdout.getvalue().splitlines(), [
             "FEN game 0: Prediction: Nothing, Confidence: 0.75",
             "FEN game 1: Prediction: Check, Confidence: 0.9",
         ])
         self.assertEqual(network.predict.call_count, 2)
+        self.assertIn("2/2 correct (100.00%)", stderr.getvalue())
         for call, position in zip(network.predict.call_args_list, positions):
             np.testing.assert_array_equal(call.args[0], ChessEncoder(position).encode())
 
@@ -101,6 +103,26 @@ class PredictionTests(unittest.TestCase):
             run_prediction(network, [])
         self.assertEqual(stdout.getvalue(), "")
         network.predict.assert_not_called()
+
+    def test_accuracy_excludes_unlabeled_positions_and_ignores_color_suffix(self):
+        positions = [FEN(f"8/8/8/8/8/8/8/K6k w - - 0 1{suffix}").parse()
+                     for suffix in (" Checkmate Black", " Check White", "")]
+        network = Mock()
+        network.predict.side_effect = [("Checkmate", 0.9), ("Nothing", 0.6), ("Check", 0.7)]
+        stdout, stderr = StringIO(), StringIO()
+        with redirect_stdout(stdout), redirect_stderr(stderr):
+            run_prediction(network, positions)
+        self.assertEqual(len(stdout.getvalue().splitlines()), 3)
+        self.assertIn("1/2 correct (50.00%)", stderr.getvalue())
+        self.assertIn("1 unlabeled position(s) excluded", stderr.getvalue())
+
+    def test_unlabeled_predictions_do_not_display_an_accuracy(self):
+        positions = [FEN("8/8/8/8/8/8/8/K6k w - - 0 1").parse()]
+        network = Mock()
+        network.predict.return_value = ("Nothing", 0.6)
+        with redirect_stdout(StringIO()), redirect_stderr(StringIO()) as stderr:
+            run_prediction(network, positions)
+        self.assertEqual(stderr.getvalue(), "")
 
 
 class MainTests(CommandLineTestCase):

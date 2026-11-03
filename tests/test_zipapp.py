@@ -62,7 +62,8 @@ class AnalyzerZipappTests(unittest.TestCase):
         boards.write_text("8/8/8/8/8/8/8/K6k w - - 0 1 Checkmate Black\n")
         result = self.run_analyzer(str(network), str(boards), "--predict")
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(result.stderr, "")
+        self.assertIn("Prediction accuracy: 0/1 correct (0.00%)", result.stderr)
+        self.assertEqual(len(result.stdout.splitlines()), 1)
 
     def test_incomplete_fen_reports_an_error_without_traceback(self):
         network = self.directory / "invalid-network.nn"

@@ -75,6 +75,13 @@ l'indice de la position (à partir de zéro), le label prédit et son score :
 FEN game <indice>: Prediction: <label>, Confidence: <score>
 ```
 
+Si des positions portent un label attendu, un bilan est affiché à la fin sur
+stderr, par exemple `Prediction accuracy: 42/50 correct (84.00%); 0 unlabeled
+position(s) excluded.` Le taux est le nombre de bonnes prédictions divisé par
+le nombre de positions étiquetées. Les positions sans label sont exclues du
+calcul ; un suffixe comme `White` ou `Black` ne participe pas à la comparaison
+des trois classes actuelles. Sans label attendu, aucun taux n'est affiché.
+
 Les labels actuels sont `Checkmate`, `Check` et `Nothing`. La valeur affichée sous
 le nom `Confidence` est le score sigmoid du neurone retenu ; les trois scores
 ne constituent pas une distribution de probabilités normalisée.
