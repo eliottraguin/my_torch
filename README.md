@@ -260,3 +260,39 @@ conservés par les cibles de nettoyage.
 - **Les prédictions d'un réseau vierge sont incorrectes** : les poids aléatoires
   permettent de vérifier le parcours d'inférence ; il faudra un modèle entraîné
   pour évaluer la reconnaissance des états d'échecs.
+
+## Préparation de données équilibrées
+
+Le script [`scripts/generate_dataset.py`](scripts/generate_dataset.py) prépare
+les fichiers FEN existants pour ton réseau à cinq classes. Il vérifie les
+positions, recalcule les labels, retire les doublons et équilibre les classes
+ainsi que les groupes de matériel. Il produit des ensembles d'entraînement,
+de validation et de test, avec un manifeste reproductible.
+
+```bash
+python -m pip install -r scripts/requirements-dataset.txt
+python scripts/generate_dataset.py --input dataset/fusion.txt --output dataset/generated
+```
+
+Par défaut : 60 000 positions, dont 48 000 pour l'entraînement, 6 000 pour la
+validation externe et 6 000 pour le test. L'analyseur conserve son découpage
+interne de validation à partir du fichier d'entraînement. Les règles de
+séparation, les options et les commandes sont détaillées dans
+[`scripts/README.md`](scripts/README.md).
+
+## Dashboard d'entraînement et de prédiction
+
+```bash
+make dashboard
+```
+
+Ouvre **http://127.0.0.1:8501**. Le dashboard permet de lancer et arrêter un
+entraînement, suivre les courbes de loss et d'accuracy, analyser les prédictions
+avec une matrice de confusion et comparer plusieurs expériences. Les graphiques
+s'exportent en HTML autonome, les métriques et prédictions en CSV. Chaque session
+conserve un modèle indépendant et son historique dans `.dashboard_runs/`.
+
+Les dépendances graphiques sont installées séparément dans `.venv-dashboard`.
+Les commandes CLI restent disponibles. Voir
+[`bonus/dashboard/README.md`](bonus/dashboard/README.md) pour les métriques,
+la validation séparée, les sauvegardes et les tests `make dashboard_tests`.
