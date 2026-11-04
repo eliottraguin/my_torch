@@ -1,0 +1,16 @@
+[theme]
+base = "dark"
+primaryColor = "#52dacb"
+backgroundColor = "#0a1120"
+secondaryBackgroundColor = "#111b2c"
+textColor = "#e5edf8"
+
+[server]
+address = "127.0.0.1"
+headless = true
+
+[browser]
+gatherUsageStats = false
+
+[client]
+toolbarMode = "minimal"
