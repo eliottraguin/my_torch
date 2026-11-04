@@ -3,6 +3,7 @@
 import random
 import sys
 from hashlib import blake2b
+import time
 
 import numpy as np
 
@@ -10,9 +11,14 @@ from .chess.chessencoder import ChessEncoder
 from .chess.fen import FEN
 from .neural_network import NeuralNetwork
 from .early_stopping import EarlyStopping
+from .metrics import evaluate_metrics
 
 _EPOCHS = 200
 _REPORT_EVERY = 10
+
+
+class TrainingCancelled(Exception):
+    """A dashboard requested a cooperative stop between training examples."""
 
 
 def _make_target(label: str, network: NeuralNetwork) -> np.ndarray:
@@ -64,12 +70,16 @@ def _backprop_step(network: NeuralNetwork, encoded: np.ndarray, target: np.ndarr
 
 def train_network(network: NeuralNetwork,
                   encoded_data: list[tuple[np.ndarray, np.ndarray]],
-                  epoch: int, *, rng=None) -> float:
+                  epoch: int, *, rng=None, should_stop=None) -> float:
     """Train one epoch and return its mean online loss."""
     if not encoded_data:
         raise ValueError("Cannot train on an empty dataset")
     (rng if rng is not None else random).shuffle(encoded_data)
-    total_loss = sum(_backprop_step(network, enc, tgt) for enc, tgt in encoded_data)
+    total_loss = 0.0
+    for enc, tgt in encoded_data:
+        if should_stop is not None and should_stop():
+            raise TrainingCancelled()
+        total_loss += _backprop_step(network, enc, tgt)
     if not np.isfinite(total_loss) or not all(
         np.isfinite(p).all() for p in network.weights + network.biases
     ):
@@ -137,41 +147,84 @@ def _snapshot(network):
     return ([w.copy() for w in network.weights], [b.copy() for b in network.biases])
 
 
-def _report_epoch(epoch, train_loss, monitored_loss, metric):
-    print(f"Epoch {epoch}/{_EPOCHS}  loss={train_loss:.8e}  "
+def _report_epoch(epoch, train_loss, monitored_loss, metric, max_epochs=None):
+    print(f"Epoch {epoch}/{max_epochs if max_epochs is not None else _EPOCHS}  loss={train_loss:.8e}  "
           f"{metric}={monitored_loss:.8e}", file=sys.stderr)
 
 
-def _run_epochs(network, train, validation, save_path, stopping, rng):
+def _run_epochs(network, train, validation, save_path, stopping, rng, *,
+                max_epochs=None, observer=None, should_stop=None):
     """Manage complete-epoch checkpoints and restore the best model on normal exit."""
     monitored = validation if validation else train
     metric = "validation_loss" if validation else "training_loss"
     network.save(save_path)
     checkpoint = _snapshot(network)
     completed_epoch = 0
+    limit = _EPOCHS if max_epochs is None else max_epochs
+    started = time.monotonic()
+
+    def check_cancel():
+        if should_stop is not None and should_stop():
+            raise TrainingCancelled()
+
+    def measure(epoch, online_loss=None):
+        if observer is None:
+            return evaluate_loss(network, monitored)
+        train_metrics = evaluate_metrics(network, train, check_cancel=check_cancel)
+        validation_metrics = evaluate_metrics(network, validation, check_cancel=check_cancel) if validation else None
+        metrics = validation_metrics or train_metrics
+        record = {'event': 'epoch', 'epoch': epoch, 'max_epochs': limit,
+                  'online_loss': online_loss, 'train': train_metrics,
+                  'validation': validation_metrics,
+                  'elapsed_seconds': time.monotonic() - started}
+        return metrics['loss'], record
+
+    def update_monitor(epoch, online_loss=None):
+        result = measure(epoch, online_loss)
+        loss, record = result if observer is not None else (result, None)
+        stop = stopping.update(loss, network, epoch)
+        if record is not None:
+            record.update(best_epoch=stopping.best_epoch, best_loss=stopping.best_loss)
+            observer(record)
+        return loss, stop
+
     try:
-        stopping.update(evaluate_loss(network, monitored), network, epoch=0)
-        for epoch in range(1, _EPOCHS + 1):
-            train_loss = train_network(network, train, epoch, rng=rng)
-            monitored_loss = evaluate_loss(network, monitored)
-            should_stop = stopping.update(monitored_loss, network, epoch)
+        update_monitor(0)
+        for epoch in range(1, limit + 1):
+            if should_stop is not None and should_stop():
+                raise TrainingCancelled()
+            if should_stop is None:
+                train_loss = train_network(network, train, epoch, rng=rng)
+            else:
+                train_loss = train_network(network, train, epoch, rng=rng, should_stop=should_stop)
+            monitored_loss, stop = update_monitor(epoch, train_loss)
             network.save(save_path)
             checkpoint = _snapshot(network)
             completed_epoch = epoch
-            if epoch == 1 or epoch % _REPORT_EVERY == 0 or should_stop:
-                _report_epoch(epoch, train_loss, monitored_loss, metric)
-            if should_stop:
+            if epoch == 1 or epoch % _REPORT_EVERY == 0 or stop:
+                _report_epoch(epoch, train_loss, monitored_loss, metric, limit)
+            if stop:
                 print(f"Early stopping: no improvement greater than {stopping.min_delta:g} "
                       f"for {stopping.patience} epochs.", file=sys.stderr)
                 break
         stopping.restore(network)
         network.save(save_path)
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, TrainingCancelled) as error:
         network.weights, network.biases = checkpoint
         network.save(save_path)
         print(f"Training interrupted; epoch {completed_epoch} saved to {save_path}",
               file=sys.stderr)
-        raise SystemExit(130) from None
+        if observer is not None:
+            observer({'event': 'stopped', 'epoch': completed_epoch,
+                      'best_epoch': stopping.best_epoch,
+                      'elapsed_seconds': time.monotonic() - started})
+        if isinstance(error, KeyboardInterrupt):
+            raise SystemExit(130) from None
+        return
+    if observer is not None:
+        observer({'event': 'completed', 'epoch': completed_epoch,
+                  'best_epoch': stopping.best_epoch, 'best_loss': stopping.best_loss,
+                  'elapsed_seconds': time.monotonic() - started})
     print(f"Restored epoch {stopping.best_epoch}: "
           f"{metric}={stopping.best_loss:.8e}", file=sys.stderr)
     print(f"Network saved to {save_path}", file=sys.stderr)
@@ -179,14 +232,24 @@ def _run_epochs(network, train, validation, save_path, stopping, rng):
 
 def run_training(network: NeuralNetwork, positions: list[FEN], save_path: str,
                  *, patience=10, min_delta=1e-6, validation_fraction=0.2,
-                 seed=42) -> None:
+                 seed=42, max_epochs=None, observer=None, should_stop=None,
+                 validation_positions=None) -> None:
     """Prepare data, monitor held-out loss and save training checkpoints."""
     if not 0 < validation_fraction < 1:
         raise ValueError("validation_fraction must be between zero and one")
     stopping = EarlyStopping(patience, min_delta)
+    if max_epochs is not None and (not isinstance(max_epochs, int) or max_epochs < 1):
+        raise ValueError('max_epochs must be a positive integer')
     examples = _prepare_examples(network, positions)
     rng = random.Random(seed)
-    train, validation = _split_dataset(examples, validation_fraction, rng)
+    if validation_positions is None:
+        train, validation = _split_dataset(examples, validation_fraction, rng)
+    else:
+        train = examples
+        validation = _prepare_examples(network, validation_positions)
+        train_keys = {blake2b(x.tobytes(), digest_size=32).digest() for x, _ in train}
+        if any(blake2b(x.tobytes(), digest_size=32).digest() in train_keys for x, _ in validation):
+            raise ValueError('Training and validation contain identical encoded positions')
     if len({int(np.argmax(target)) for _, target in examples}) < 2:
         print("Warning: only one class is present; low loss does not demonstrate "
               "classification across all labels.", file=sys.stderr)
@@ -195,5 +258,7 @@ def run_training(network: NeuralNetwork, positions: list[FEN], save_path: str,
               "monitoring training loss only, without a generalization estimate.",
               file=sys.stderr)
     print(f"Training on {len(train)} examples, validating on {len(validation)}, "
-          f"for at most {_EPOCHS} epochs (patience={patience}).", file=sys.stderr)
-    _run_epochs(network, train, validation, save_path, stopping, rng)
+          f"for at most {max_epochs if max_epochs is not None else _EPOCHS} epochs "
+          f"(patience={patience}).", file=sys.stderr)
+    _run_epochs(network, train, validation, save_path, stopping, rng,
+                max_epochs=max_epochs, observer=observer, should_stop=should_stop)
