@@ -14,3 +14,5 @@ dataset.zip
 htmlcov/
 .venv/
 .venv-tests/
+.venv-dashboard/
+.dashboard_runs/

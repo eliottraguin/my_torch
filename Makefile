@@ -8,6 +8,10 @@
 TEST_ENV	=	.venv-tests
 TEST_PYTHON	=	$(TEST_ENV)/bin/python
 
+DASHBOARD_ENV = .venv-dashboard
+DASHBOARD_PYTHON = $(DASHBOARD_ENV)/bin/python
+DASHBOARD_PORT ?= 8501
+
 NAME1	=	my_torch_analyzer
 NAME2	=	my_torch_generator
 
@@ -35,4 +39,15 @@ tests_run: $(TEST_ENV)/.dependencies-installed
 	$(TEST_PYTHON) -m coverage report
 	$(TEST_PYTHON) -m coverage html
 
-.PHONY:	all re clean fclean tests_run
+$(DASHBOARD_ENV)/.dependencies-installed: bonus/dashboard/requirements.txt scripts/requirements-dataset.txt
+	python3 -m venv $(DASHBOARD_ENV)
+	$(DASHBOARD_PYTHON) -m pip install -r bonus/dashboard/requirements.txt
+	touch $@
+
+dashboard: $(DASHBOARD_ENV)/.dependencies-installed
+	cd bonus/dashboard && $(abspath $(DASHBOARD_PYTHON)) -m streamlit run app.py --server.port $(DASHBOARD_PORT)
+
+dashboard_tests: $(DASHBOARD_ENV)/.dependencies-installed
+	PYTHONDONTWRITEBYTECODE=1 PYTHONPATH="$(CURDIR):$(CURDIR)/src" $(DASHBOARD_PYTHON) -m unittest discover -s bonus/dashboard/tests -v
+
+.PHONY:	all re clean fclean tests_run dashboard dashboard_tests
