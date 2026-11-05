@@ -1,0 +1,16 @@
+{
+  "source": "creative_results.json",
+  "sha256": "5a8dac3104254569a52db1a9d35dac3f2bb05c385652c41b182693e21f0642bb",
+  "matplotlib": "3.6.3",
+  "files": [
+    "architectures.png",
+    "architectures.svg",
+    "learning_curves.png",
+    "learning_curves.svg",
+    "confusion.png",
+    "confusion.svg",
+    "tradeoffs.png",
+    "tradeoffs.svg"
+  ],
+  "note": "Figures from stored results, no new training; test confusion uses seed 42 only."
+}

@@ -122,3 +122,9 @@ make tests_run
 # Tests ciblés, une fois les dépendances installées :
 PYTHONPATH=src python -m unittest tests.test_dataset_generation -v
 ```
+
+## Documentation associée
+
+Voir le [format FEN et l’encodage](../docs/formats.md), le
+[rapport illustré](../docs/benchmarks.md) et les
+[limites de provenance du modèle livré](../docs/model-card.md).

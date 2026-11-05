@@ -122,3 +122,12 @@ PYTHONPATH=src .venv-tests/bin/python -m unittest tests.test_training_monitoring
 Les tests couvrent de vrais entraînements courts, la préservation du modèle
 source, les métriques, les exports HTML et les interactions de l'interface avec
 le simulateur officiel Streamlit AppTest.
+
+## Réglages persistants et documentation
+
+Les champs `max_epochs`, `patience` et `min_delta` sont conservés dans les `.nn`.
+L’inspection applique 200, 10 et 1e-6 aux anciens fichiers qui les omettent.
+Les contrôles du formulaire sont préremplis depuis le modèle choisi ; les réglages
+explicitement saisis sont ceux utilisés et sauvegardés pour l’expérience.
+Voir les [formats](../../docs/formats.md), les [règles de sauvegarde](../../docs/training.md),
+le [bilan de tests](../../docs/testing.md) et le [rapport illustré](../../docs/benchmarks.md).
