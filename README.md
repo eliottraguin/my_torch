@@ -104,6 +104,9 @@ Les fichiers `.conf` utilisent JSON. Exemple compatible avec l'encodeur actuel :
   "seed": 42,
   "init": 0.1,
   "learning_rate": 0.01,
+  "max_epochs": 200,
+  "patience": 10,
+  "min_delta": 0.000001,
   "hidden_activation": "relu",
   "output_activation": "sigmoid",
   "labels": ["Checkmate", "Check", "Nothing"]
@@ -117,6 +120,9 @@ Les fichiers `.conf` utilisent JSON. Exemple compatible avec l'encodeur actuel :
 | `seed` | Graine du premier réseau ; elle augmente d'une unité pour chaque réseau suivant. |
 | `init` | Poids tirés uniformément entre `-init` et `init`. Les biais commencent à zéro. |
 | `learning_rate` | Taux utilisé pour les mises à jour pendant l'entraînement. |
+| `max_epochs` | Nombre maximal d'époques, entier positif. Défaut : `200`. |
+| `patience` | Nombre d'époques sans progrès significatif avant l'arrêt, entier positif. Défaut : `10`. |
+| `min_delta` | Baisse de perte à dépasser pour remettre la patience à zéro, nombre fini supérieur ou égal à zéro. Défaut : `0.000001`. |
 | `hidden_activation` | Activation des couches cachées : `sigmoid`, `relu` ou `silu`. Défaut : `sigmoid`. |
 | `output_activation` | Activation de sortie. Conserver `sigmoid` pour comparer les couches cachées. Défaut : `sigmoid`. |
 | `labels` | Correspondance entre les indices de sortie et les labels. |
@@ -192,12 +198,19 @@ regroupe pas automatiquement les positions différentes issues d'une même parti
 Pour une évaluation finale, garde également un fichier de test indépendant.
 
 Après chaque époque, la perte de validation est calculée sans modifier les poids.
-L'entraînement s'arrête après 10 époques sans amélioration supérieure à `1e-6`,
-avec un maximum de 200 époques. Les meilleurs poids et biais sont restaurés avant
+Par défaut, l'entraînement s'arrête après 10 époques sans amélioration supérieure
+à `1e-6`, avec un maximum de 200 époques. Les meilleurs poids et biais sont restaurés avant
 la sauvegarde, même si le meilleur modèle était celui du départ (époque 0).
 Les pertes sont affichées en notation scientifique pour distinguer les petites
 valeurs de zéro. La patience, le seuil, la fraction de validation et la graine
 sont des arguments nommés de `run_training` ; la syntaxe CLI reste inchangée.
+Les champs `max_epochs`, `patience` et `min_delta` du `.conf` sont écrits dans le
+`.nn`, chargés et conservés à chaque sauvegarde. L'entraînement CLI utilise ces
+valeurs ; les anciens modèles sans ces champs gardent les valeurs par défaut.
+Les arguments explicites de `run_training` et les réglages choisis dans le
+dashboard prennent priorité et sont conservés dans le modèle entraîné.
+Modifier un `.conf` n'altère pas un `.nn` existant : régénère un réseau ou adapte
+ces trois champs dans le JSON du modèle existant pour conserver ses poids.
 
 Si le dataset est trop petit pour fournir une validation distincte, un avertissement
 annonce que l'arrêt surveille uniquement la perte d'entraînement, sans mesure de

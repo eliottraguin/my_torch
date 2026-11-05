@@ -43,7 +43,7 @@ h1,h2,h3 {letter-spacing:-.025em;}
 
 
 @st.cache_data(show_spinner=False)
-def cached_info(path, modified):
+def cached_info(path, modified, schema_version=2):
     return model_info(path)
 
 
@@ -157,6 +157,12 @@ with train_tab:
     st.caption('Un entraînement s’exécute en arrière-plan. Tu peux explorer les autres onglets pendant son exécution.')
     mode = st.radio('Point de départ', ['Réseau vierge', 'Modèle existant'], horizontal=True)
     model_path = choose_file('Réseau de départ', models(), 'training_model') if mode == 'Modèle existant' else ''
+    defaults = json.loads((ROOT / 'tests/conf_example/chess_network.conf').read_text())
+    if model_path:
+        try:
+            defaults = cached_info(model_path, Path(model_path).stat().st_mtime_ns)
+        except Exception as error:
+            st.error(str(error))
     with st.form('training_form'):
         a, b = st.columns(2)
         training_choices = [str(p) for p in datasets()]
@@ -170,12 +176,15 @@ with train_tab:
                                       index=default_validation,
                                       format_func=lambda p: display_path(p) if p else 'Découpage interne à 20 %')
         a, b, c, d = st.columns(4)
-        epochs = a.number_input('Époques maximum', 1, 2000, 100)
+        default_epochs = int(defaults.get('max_epochs', 200))
+        epochs = a.number_input('Époques maximum', 1, max(2000, default_epochs), default_epochs)
         learning_rate = b.number_input('Learning rate', min_value=0.000001, max_value=10.0, value=0.01, format='%.6f')
-        patience = c.number_input('Patience', 1, 200, 10)
+        default_patience = int(defaults.get('patience', 10))
+        patience = c.number_input('Patience', 1, max(200, default_patience), default_patience)
         seed = d.number_input('Graine', min_value=0, value=42)
         a, b = st.columns(2)
-        min_delta = a.number_input('Amélioration minimale', min_value=0.0, value=0.000001, format='%.8f')
+        min_delta = a.number_input('Amélioration minimale', min_value=0.0,
+                                   value=float(defaults.get('min_delta', 1e-6)), format='%.8f')
         limit = b.number_input('Limite de lignes par fichier (0 = toutes)', min_value=0, value=0, step=100)
         with st.expander('Architecture du réseau vierge', expanded=mode == 'Réseau vierge'):
             a, b, c = st.columns(3)
@@ -198,6 +207,8 @@ with train_tab:
             config = {'name': 'dashboard', 'layers': [838] + sizes + [len(labels)],
                       'labels': labels, 'seed': int(seed), 'init': float(init),
                       'learning_rate': float(learning_rate), 'hidden_activation': activation,
+                      'max_epochs': int(epochs), 'patience': int(patience),
+                      'min_delta': float(min_delta),
                       'output_activation': output}
             options = TrainingOptions(train_path=train_path, validation_path=validation_path,
                                       model_path=model_path or '', epochs=int(epochs),

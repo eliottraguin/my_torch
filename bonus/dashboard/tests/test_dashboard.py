@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
+from unittest.mock import patch
 
 from streamlit.testing.v1 import AppTest
 
@@ -13,12 +14,39 @@ from analyzer.chess.fen import FEN
 from bonus.dashboard.charts import confusion_chart, figures_html, learning_chart
 from bonus.dashboard.engine import (
     ROOT, TrainingJob, TrainingOptions, evaluate_positions, load_network,
-    predictions_csv, profile_dataset, read_history,
+    model_info, predictions_csv, profile_dataset, read_history,
 )
 from tests.support import write_test_network
 
 
 class DashboardTests(unittest.TestCase):
+    def test_inspection_accepts_legacy_objects_without_training_attributes(self):
+        with TemporaryDirectory() as directory:
+            path = Path(directory) / 'old-model.nn'
+            write_test_network(path)
+            network = load_network(path)
+            for name in ('max_epochs', 'patience', 'min_delta'):
+                delattr(network, name)
+            with patch('bonus.dashboard.engine.load_network', return_value=network):
+                info = model_info(path)
+            self.assertEqual((info['max_epochs'], info['patience'], info['min_delta']),
+                             (200, 10, 1e-6))
+
+    def test_legacy_loader_preserves_custom_settings_from_file(self):
+        with TemporaryDirectory() as directory:
+            path = Path(directory) / 'model.nn'
+            write_test_network(path)
+            network = load_network(path)
+            for name in ('max_epochs', 'patience', 'min_delta'):
+                delattr(network, name)
+            data = json.loads(path.read_text())
+            data.update(max_epochs=37, patience=4, min_delta=.0002)
+            path.write_text(json.dumps(data))
+            with patch('bonus.dashboard.engine.NeuralNetwork.load_from_file', return_value=network):
+                info = model_info(path)
+            self.assertEqual((info['max_epochs'], info['patience'], info['min_delta']),
+                             (37, 4, .0002))
+
     def test_prediction_metrics_exclude_unknown_and_missing_labels(self):
         with TemporaryDirectory() as directory:
             model = Path(directory) / 'model.nn'
@@ -85,6 +113,15 @@ class DashboardTests(unittest.TestCase):
         self.assertEqual(figure.layout.yaxis.title.text, 'Classe attendue')
 
     def test_streamlit_renders_four_tabs_and_runs_single_position_prediction(self):
+        with TemporaryDirectory() as directory:
+            model = Path(directory) / 'ui-model.nn'
+            write_test_network(model)
+            network = load_network(model)
+            # UI behavior must not depend on a user's model being edited or trained.
+            with patch('bonus.dashboard.engine.load_network', return_value=network):
+                self.check_ui_prediction()
+
+    def check_ui_prediction(self):
         app = AppTest.from_file(str(ROOT / 'bonus/dashboard/app.py'), default_timeout=30).run()
         self.assertEqual(len(app.exception), 0)
         self.assertEqual(len(app.tabs), 4)

@@ -125,13 +125,12 @@ class TrainingTests(unittest.TestCase):
             return float(epoch)
 
         with patch('analyzer.training.ChessEncoder') as encoder, \
-             patch('analyzer.training._EPOCHS', 2), \
              patch('analyzer.training.train_network', side_effect=step) as train, \
              patch('analyzer.training.evaluate_loss', side_effect=[2., 0.5, 0.6]), \
              patch.object(net, 'save', side_effect=lambda path: saved.append(net.weights[0].copy())), \
              redirect_stderr(StringIO()):
             encoder.return_value.encode.return_value = np.zeros(2)
-            run_training(net, positions, 'unused.nn')
+            run_training(net, positions, 'unused.nn', max_epochs=2)
         self.assertEqual(train.call_count, 2)
         self.assertEqual(len(saved), 4)
         np.testing.assert_array_equal(saved[2], initial + 2)

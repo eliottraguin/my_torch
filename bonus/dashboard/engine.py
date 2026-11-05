@@ -19,6 +19,7 @@ from analyzer.metrics import classification_metrics
 from analyzer.neural_network import NeuralNetwork
 from analyzer.training import run_training
 from generator.neuralfile import NeuralFile
+from training_config import training_settings
 
 ROOT = Path(__file__).resolve().parents[2]
 RUNS = ROOT / '.dashboard_runs'
@@ -67,12 +68,19 @@ def check_model(network):
 
 
 def load_network(path):
-    return check_model(NeuralNetwork.load_from_file(path))
+    network = NeuralNetwork.load_from_file(path)
+    # A running Streamlit session can retain the pre-settings loader class.
+    # Restore persisted controls even when that loader ignores these fields.
+    settings = training_settings(json.loads(Path(path).read_text(encoding='utf-8')))
+    for name, value in settings.items():
+        setattr(network, name, value)
+    return check_model(network)
 
 
 def model_info(path):
     network = load_network(path)
     return {'layers': [network.input_size] + network.hidden_layers + [network.output_size],
+            **training_settings(vars(network)),
             'parameters': sum(w.size for w in network.weights) + sum(b.size for b in network.biases),
             'labels': network.labels, 'learning_rate': network.learning_rate,
             'hidden_activation': network.activation_function.func_name,
@@ -216,6 +224,9 @@ class TrainingJob:
                 save_json(self.directory / 'initial.nn', data)
                 network = load_network(self.directory / 'initial.nn')
             network.learning_rate = options.learning_rate
+            network.max_epochs = options.epochs
+            network.patience = options.patience
+            network.min_delta = options.min_delta
             # Every experiment gets an independent model, including resumed ones.
             network.save(self.directory / 'initial.nn')
             positions, errors = read_positions(options.train_path, options.limit)

@@ -12,8 +12,9 @@ from .chess.fen import FEN
 from .neural_network import NeuralNetwork
 from .early_stopping import EarlyStopping
 from .metrics import evaluate_metrics
+from training_config import DEFAULT_MAX_EPOCHS, training_settings
 
-_EPOCHS = 200
+_EPOCHS = DEFAULT_MAX_EPOCHS
 _REPORT_EVERY = 10
 
 
@@ -231,15 +232,20 @@ def _run_epochs(network, train, validation, save_path, stopping, rng, *,
 
 
 def run_training(network: NeuralNetwork, positions: list[FEN], save_path: str,
-                 *, patience=10, min_delta=1e-6, validation_fraction=0.2,
+                 *, patience=None, min_delta=None, validation_fraction=0.2,
                  seed=42, max_epochs=None, observer=None, should_stop=None,
                  validation_positions=None) -> None:
     """Prepare data, monitor held-out loss and save training checkpoints."""
     if not 0 < validation_fraction < 1:
         raise ValueError("validation_fraction must be between zero and one")
+    settings = training_settings({
+        'max_epochs': network.max_epochs if max_epochs is None else max_epochs,
+        'patience': network.patience if patience is None else patience,
+        'min_delta': network.min_delta if min_delta is None else min_delta,
+    })
+    max_epochs, patience, min_delta = (settings[key] for key in ('max_epochs', 'patience', 'min_delta'))
+    network.max_epochs, network.patience, network.min_delta = max_epochs, patience, min_delta
     stopping = EarlyStopping(patience, min_delta)
-    if max_epochs is not None and (not isinstance(max_epochs, int) or max_epochs < 1):
-        raise ValueError('max_epochs must be a positive integer')
     examples = _prepare_examples(network, positions)
     rng = random.Random(seed)
     if validation_positions is None:

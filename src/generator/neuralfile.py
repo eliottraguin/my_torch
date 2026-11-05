@@ -7,6 +7,7 @@ from typing import Any
 import numpy as np
 
 from generator.configfile import ConfigFile
+from training_config import training_settings
 
 
 class NeuralFile:
@@ -18,6 +19,7 @@ class NeuralFile:
         self._next_index = 1
 
     def get_data(self, seed=None):
+        settings = training_settings(self.config_data)
         if seed is None:
             seed = self.config_data["seed"]
         weights, biases = self.get_weights_bias(
@@ -26,6 +28,7 @@ class NeuralFile:
             layers=self.config_data["layers"],
         )
         return {
+            **settings,
             "layers": self.config_data["layers"],
             "learning_rate": self.config_data["learning_rate"],
             "labels": self.config_data["labels"],

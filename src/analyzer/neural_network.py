@@ -7,6 +7,9 @@ from tempfile import NamedTemporaryFile
 import numpy as np
 
 from .activation import ActivationFunction
+from training_config import (
+    DEFAULT_MAX_EPOCHS, DEFAULT_PATIENCE, DEFAULT_MIN_DELTA, training_settings,
+)
 
 class NeuralNetwork:
     """A class to represent a neural network loaded from a file."""
@@ -19,6 +22,9 @@ class NeuralNetwork:
         self.labels = None
         self.weights = None
         self.biases = None
+        self.max_epochs = DEFAULT_MAX_EPOCHS
+        self.patience = DEFAULT_PATIENCE
+        self.min_delta = DEFAULT_MIN_DELTA
         self.activation_function = ActivationFunction("sigmoid")
         self.output_activation_function = ActivationFunction("sigmoid")
 
@@ -34,6 +40,10 @@ class NeuralNetwork:
         try:
             with open(self.filepath, 'r') as file:
                 data = json.load(file)
+                settings = training_settings(data)
+                self.max_epochs = settings['max_epochs']
+                self.patience = settings['patience']
+                self.min_delta = settings['min_delta']
                 self.input_size = data['layers'][0]
                 self.output_size = data['layers'][-1]
                 self.hidden_layers = data['layers'][1:-1]
@@ -77,6 +87,7 @@ class NeuralNetwork:
         """Replace the model atomically after writing a complete JSON file."""
         layers = [self.input_size] + list(self.hidden_layers) + [self.output_size]
         data = {
+            **training_settings(vars(self)),
             "layers": layers,
             "learning_rate": self.learning_rate,
             "labels": self.labels,
