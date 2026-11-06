@@ -1,0 +1,6 @@
+75.21 %  a64
+         Check Black       72.35 %
+         Check White       70.39 %
+         Checkmate Black   85.48 %
+         Checkmate White   81.47 %
+         Nothing           66.36 %

@@ -1,0 +1,10 @@
+mse_raw lr=0.01 epoch  1 val_acc=55.71% t=8s
+mse_raw lr=0.01 epoch  2 val_acc=57.27% t=17s
+mse_raw lr=0.01 epoch  3 val_acc=60.27% t=26s
+mse_raw lr=0.01 epoch  4 val_acc=61.44% t=34s
+mse_raw lr=0.01 epoch  5 val_acc=61.96% t=43s
+mse_raw lr=0.01 epoch  6 val_acc=62.89% t=51s
+mse_raw lr=0.01 epoch  7 val_acc=62.29% t=60s
+mse_raw lr=0.01 epoch  8 val_acc=63.10% t=68s
+mse_raw lr=0.01 epoch  9 val_acc=62.14% t=77s
+mse_raw lr=0.01 epoch 10 val_acc=64.80% t=85s

@@ -1,0 +1,15 @@
+ce_norm lr=0.003 epoch  1 val_acc=57.51% t=8s
+ce_norm lr=0.003 epoch  2 val_acc=60.69% t=16s
+ce_norm lr=0.003 epoch  3 val_acc=63.32% t=24s
+ce_norm lr=0.003 epoch  4 val_acc=64.68% t=32s
+ce_norm lr=0.003 epoch  5 val_acc=64.78% t=40s
+ce_norm lr=0.003 epoch  6 val_acc=65.77% t=47s
+ce_norm lr=0.003 epoch  7 val_acc=66.56% t=55s
+ce_norm lr=0.003 epoch  8 val_acc=65.75% t=63s
+ce_norm lr=0.003 epoch  9 val_acc=65.84% t=70s
+ce_norm lr=0.003 epoch 10 val_acc=66.44% t=78s
+ce_norm lr=0.003 epoch 11 val_acc=66.80% t=86s
+ce_norm lr=0.003 epoch 12 val_acc=66.90% t=94s
+ce_norm lr=0.003 epoch 13 val_acc=66.64% t=102s
+ce_norm lr=0.003 epoch 14 val_acc=66.37% t=109s
+ce_norm lr=0.003 epoch 15 val_acc=65.93% t=117s

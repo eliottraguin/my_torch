@@ -1,0 +1,6 @@
+89.56 %  continue_88
+         Check Black       87.43 %
+         Check White       88.52 %
+         Checkmate Black   90.73 %
+         Checkmate White   91.42 %
+         Nothing           89.71 %

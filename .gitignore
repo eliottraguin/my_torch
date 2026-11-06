@@ -16,3 +16,4 @@ htmlcov/
 .venv-tests/
 .venv-dashboard/
 .dashboard_runs/
+benchmark_runs/

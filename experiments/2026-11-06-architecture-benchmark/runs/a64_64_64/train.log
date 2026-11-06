@@ -1,0 +1,11 @@
+Training on 246400 examples, validating on 61600, for at most 400 epochs (patience=25).
+Epoch 1/400  loss=2.80687776e-01  validation_loss=2.47112301e-01
+Epoch 10/400  loss=1.71029494e-01  validation_loss=1.94573428e-01
+Epoch 20/400  loss=1.43322337e-01  validation_loss=1.78929900e-01
+Epoch 30/400  loss=1.29345330e-01  validation_loss=1.80912813e-01
+Epoch 40/400  loss=1.19945396e-01  validation_loss=1.87267956e-01
+Epoch 46/400  loss=1.15593930e-01  validation_loss=1.99669683e-01
+Early stopping: no improvement greater than 1e-06 for 25 epochs.
+Restored epoch 21: validation_loss=1.77375468e-01
+Network saved to trained.nn
+exit=0 duration=20min

@@ -1,0 +1,6 @@
+74.87 %  a128
+         Check Black       72.55 %
+         Check White       70.48 %
+         Checkmate Black   80.62 %
+         Checkmate White   82.26 %
+         Nothing           68.44 %

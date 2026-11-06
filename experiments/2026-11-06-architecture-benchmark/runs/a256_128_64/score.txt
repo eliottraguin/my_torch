@@ -1,0 +1,6 @@
+74.79 %  a256_128_64
+         Check Black       77.38 %
+         Check White       77.34 %
+         Checkmate Black   77.64 %
+         Checkmate White   81.94 %
+         Nothing           59.66 %

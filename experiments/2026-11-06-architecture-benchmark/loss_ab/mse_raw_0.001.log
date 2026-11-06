@@ -1,0 +1,15 @@
+mse_raw lr=0.001 epoch  1 val_acc=38.90% t=8s
+mse_raw lr=0.001 epoch  2 val_acc=43.20% t=17s
+mse_raw lr=0.001 epoch  3 val_acc=45.82% t=25s
+mse_raw lr=0.001 epoch  4 val_acc=51.41% t=33s
+mse_raw lr=0.001 epoch  5 val_acc=54.25% t=42s
+mse_raw lr=0.001 epoch  6 val_acc=55.92% t=50s
+mse_raw lr=0.001 epoch  7 val_acc=57.54% t=58s
+mse_raw lr=0.001 epoch  8 val_acc=58.38% t=67s
+mse_raw lr=0.001 epoch  9 val_acc=57.00% t=76s
+mse_raw lr=0.001 epoch 10 val_acc=60.34% t=85s
+mse_raw lr=0.001 epoch 11 val_acc=60.70% t=94s
+mse_raw lr=0.001 epoch 12 val_acc=61.23% t=102s
+mse_raw lr=0.001 epoch 13 val_acc=59.80% t=111s
+mse_raw lr=0.001 epoch 14 val_acc=59.79% t=119s
+mse_raw lr=0.001 epoch 15 val_acc=62.24% t=127s
