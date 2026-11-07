@@ -158,7 +158,6 @@ def _run_epochs(network, train, validation, save_path, stopping, rng, *,
     """Manage complete-epoch checkpoints and restore the best model on normal exit."""
     monitored = validation if validation else train
     metric = "validation_loss" if validation else "training_loss"
-    network.save(save_path)
     checkpoint = _snapshot(network)
     completed_epoch = 0
     limit = _EPOCHS if max_epochs is None else max_epochs
@@ -199,7 +198,6 @@ def _run_epochs(network, train, validation, save_path, stopping, rng, *,
             else:
                 train_loss = train_network(network, train, epoch, rng=rng, should_stop=should_stop)
             monitored_loss, stop = update_monitor(epoch, train_loss)
-            network.save(save_path)
             checkpoint = _snapshot(network)
             completed_epoch = epoch
             if epoch == 1 or epoch % _REPORT_EVERY == 0 or stop:
@@ -229,7 +227,6 @@ def _run_epochs(network, train, validation, save_path, stopping, rng, *,
     print(f"Restored epoch {stopping.best_epoch}: "
           f"{metric}={stopping.best_loss:.8e}", file=sys.stderr)
     print(f"Network saved to {save_path}", file=sys.stderr)
-
 
 def run_training(network: NeuralNetwork, positions: list[FEN], save_path: str,
                  *, patience=None, min_delta=None, validation_fraction=0.2,
